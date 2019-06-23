@@ -1,6 +1,8 @@
 //uint8_t secondHand = (millis() / 1000) % 15;
 const int sensorPin = A0;
+const int sensor2Pin = A1;
 int sensorValue = 0; 
+int sensor2Value = 0;
 //fastled stuff
 #include "FastLED.h"                                          // FastLED library.
 
@@ -42,10 +44,19 @@ void setup() {
 } // setup()
 
 void loop () {
-  ChangeMe(); 
-  EVERY_N_MILLISECONDS(conf_thisdelay) { confetti(); }
-  FastLED.show();  
-}
+  
+  ChangeMe();
+  sensor2Value = analogRead(sensor2Pin);
+  uint8_t thisdelay = (sensor2Value / 25);
+  Serial.print("delay: ");
+  Serial.println(thisdelay);
+  EVERY_N_MILLIS_I(thistimer, thisdelay) {                          // FastLED based non-blocking delay to update/display the sequence.
+    confetti();
+  }
+
+  FastLED.show();
+  thistimer.setPeriod(thisdelay);
+} // loop()
 
 void confetti() {                                             // random colored speckles that blink in and fade smoothly
   fadeToBlackBy(leds, NUM_LEDS, thisfade);                    // Low values = slower fade.
@@ -60,7 +71,7 @@ void ChangeMe() {                                             // A time (rather 
                   //time changed to potentiometer readings
   sensorValue = analogRead(sensorPin);
   uint8_t secondHand = (sensorValue / 100);
-  Serial.println(sensorValue);
+  Serial.print("switch: ");
   Serial.println(secondHand);
   static uint8_t lastSecond = 99;                             // Static variable, means it's only defined once. This is our 'debounce' variable.
   if (lastSecond != secondHand) {                             // Debounce to make sure we're not repeating an assignment.

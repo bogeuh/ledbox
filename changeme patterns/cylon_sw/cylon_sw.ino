@@ -5,6 +5,10 @@ Date: February 2015
 Juggle just moves some balls back and forth. A single ball could be a Cylon effect. I've added several variables to this simple routine.
 */
 
+const int sensorPin = A0;
+const int sensor2Pin = A1;
+int sensorValue = 0; 
+int sensor2Value = 0;
 
 #include "FastLED.h"
 
@@ -39,7 +43,7 @@ uint8_t basebeat = 5;                                         // Higher = faster
 
 void setup() {
   delay(1000);                                                // Power-up safety delay or something like that.
-  Serial.begin(57600);
+  Serial.begin(115200);
 
   LEDS.addLeds<LED_TYPE, LED_DT, COLOR_ORDER>(leds, NUM_LEDS);    // Use this for WS2812B
   //LEDS.addLeds<LED_TYPE, LED_DT, LED_CK, COLOR_ORDER>(leds, NUM_LEDS);  // Use this for WS2801 or APA102
@@ -49,12 +53,26 @@ void setup() {
 } // setup()
 
   
-void loop() {
-  ChangeMe();
-  juggle();
-  show_at_max_brightness_for_power();                         // Power managed display of LED's.
-} // loop()
+// void loop() {
+//   ChangeMe();
+//   juggle();
+//   show_at_max_brightness_for_power();                         // Power managed display of LED's.
+// } // loop()
 
+void loop () {
+  
+  ChangeMe();
+  sensor2Value = analogRead(sensor2Pin);
+  uint8_t thisdelay = (sensor2Value / 25);
+  Serial.print("delay: ");
+  Serial.println(thisdelay);
+  EVERY_N_MILLIS_I(thistimer, thisdelay) {                          // FastLED based non-blocking delay to update/display the sequence.
+    juggle();
+  }
+
+  FastLED.show();
+  thistimer.setPeriod(thisdelay);
+} // loop()
 
 void juggle() {                                               // Several colored dots, weaving in and out of sync with each other
   curhue = thishue;                                          // Reset the hue values.
@@ -67,13 +85,19 @@ void juggle() {                                               // Several colored
 
 
 void ChangeMe() {                                             // A time (rather than loop) based demo sequencer. This gives us full control over the length of each sequence.
-  uint8_t secondHand = (millis() / 1000) % 30;                // IMPORTANT!!! Change '30' to a different value to change duration of the loop.
+                  //time changed to potentiometer readings
+  sensorValue = analogRead(sensorPin);
+  uint8_t secondHand = (sensorValue / 100);
+  Serial.print("switch: ");
+  Serial.println(secondHand);
   static uint8_t lastSecond = 99;                             // Static variable, means it's only defined once. This is our 'debounce' variable.
   if (lastSecond != secondHand) {                             // Debounce to make sure we're not repeating an assignment.
     lastSecond = secondHand;
-    if (secondHand ==  0)  {numdots=1; faderate=2;}  // You can change values here, one at a time , or altogether.
-    if (secondHand == 10)  {numdots=4; thishue=128; faderate=8;}
-    if (secondHand == 20)  {hueinc=48; thishue=random8();}                               // Only gets called once, and not continuously for the next several seconds. Therefore, no rainbows.
+    switch(secondHand) {
+    case 0: numdots=1; faderate=2; break; // You can change values here, one at a time , or altogether.
+    case 5: numdots=4; thishue=128; faderate=8; break;
+    case 10: hueinc=48; thishue=random8(); break;
+    }                               // Only gets called once, and not continuously for the next several seconds. Therefore, no rainbows.
   }
 } // ChangeMe()
 
